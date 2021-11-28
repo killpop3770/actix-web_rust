@@ -1,7 +1,10 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
-
 mod models;
+mod config;
+
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use crate::models::Status;
+use std::io;
+use dotenv::dotenv;
 
 #[get("/")]
 async fn hello() -> impl Responder {
@@ -20,13 +23,19 @@ async fn manual_hello() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    dotenv().ok();
+
+    let config = crate::config::Config::from_env().unwrap();
+
+    println!("Starting server at http://{}:{}/", config.server.host, config.server.port);
+
     HttpServer::new(|| {
         App::new()
             .service(hello)
             .service(echo)
             .route("/hey", web::get().to(manual_hello))
     })
-        .bind("127.0.0.1:8080")?
+        .bind(format!("{}:{}", config.server.host, config.server.port))?
         .run()
         .await
 }
